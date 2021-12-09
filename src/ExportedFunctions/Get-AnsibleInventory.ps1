@@ -1,4 +1,5 @@
-<#
+function Get-AnsibleInventory {
+    <#
 .DESCRIPTION
 Gets inventories defined in Ansible Tower.
 
@@ -38,78 +39,79 @@ The ID of a specific AnsibleInventory to get
 .PARAMETER AnsibleTower
 The Ansible Tower instance to run against.  If no value is passed the command will run against $Global:DefaultAnsibleTower.
 #>
-function Get-AnsibleInventory {
-    [CmdletBinding(DefaultParameterSetname='PropertyFilter')]
-    [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSAvoidGlobalVars", "Global:DefaultAnsibleTower")]
-    [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSAvoidUsingPlainTextForPassword", "InsightsCredential")]
+    [CmdletBinding(DefaultParameterSetname = 'PropertyFilter')]
+    #[Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSAvoidGlobalVars", "Global:DefaultAnsibleTower")]
+    #[Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSAvoidUsingPlainTextForPassword", "InsightsCredential")]
     param(
-        [Parameter(Position=2,ParameterSetName='PropertyFilter')]
+        [Parameter(Position = 2, ParameterSetName = 'PropertyFilter')]
         [String]$Description,
 
-        [Parameter(ParameterSetName='PropertyFilter')]
+        [Parameter(ParameterSetName = 'PropertyFilter')]
         [switch]$HasActiveFailures,
 
-        [Parameter(ParameterSetName='PropertyFilter')]
+        [Parameter(ParameterSetName = 'PropertyFilter')]
         [switch]$HasInventorySources,
 
-        [Parameter(ParameterSetName='PropertyFilter')]
+        [Parameter(ParameterSetName = 'PropertyFilter')]
         [String]$HostFilter,
 
-        [Parameter(ParameterSetName='PropertyFilter')]
+        [Parameter(ParameterSetName = 'PropertyFilter')]
         [Object]$InsightsCredential,
 
-        [Parameter(ParameterSetName='PropertyFilter')]
-        [ValidateSet('','smart')]
+        [Parameter(ParameterSetName = 'PropertyFilter')]
+        [ValidateSet('', 'smart')]
         [string]$Kind,
 
-        [Parameter(Position=1,ParameterSetName='PropertyFilter')]
+        [Parameter(Position = 1, ParameterSetName = 'PropertyFilter')]
         [String]$Name,
 
-        [Parameter(Position=3,ParameterSetName='PropertyFilter')]
+        [Parameter(Position = 3, ParameterSetName = 'PropertyFilter')]
         [Object]$Organization,
 
-        [Parameter(ParameterSetName='PropertyFilter')]
+        [Parameter(ParameterSetName = 'PropertyFilter')]
         [switch]$PendingDeletion,
 
-        [Parameter(ParameterSetName='PropertyFilter')]
+        [Parameter(ParameterSetName = 'PropertyFilter')]
         [String]$Variables,
 
-        [Parameter(ValueFromPipelineByPropertyName=$true,ParameterSetName='ById')]
+        [Parameter(ValueFromPipelineByPropertyName = $true, ParameterSetName = 'ById')]
         [Int32]$Id,
 
-        [Parameter(ParameterSetName='ById')]
+        [Parameter(ParameterSetName = 'ById')]
         [Switch]$UseCache,
 
         $AnsibleTower = $Global:DefaultAnsibleTower
     )
     process {
         $Filter = @{}
-        if($PSBoundParameters.ContainsKey("Description")) {
-            if($Description.Contains("*")) {
+        if ($PSBoundParameters.ContainsKey("Description")) {
+            if ($Description.Contains("*")) {
                 $Filter["description__iregex"] = $Description.Replace("*", ".*")
-            } else {
+            }
+            else {
                 $Filter["description"] = $Description
             }
         }
 
-        if($PSBoundParameters.ContainsKey("HasActiveFailures")) {
+        if ($PSBoundParameters.ContainsKey("HasActiveFailures")) {
             $Filter["has_active_failures"] = $HasActiveFailures
         }
 
-        if($PSBoundParameters.ContainsKey("HasInventorySources")) {
+        if ($PSBoundParameters.ContainsKey("HasInventorySources")) {
             $Filter["has_inventory_sources"] = $HasInventorySources
         }
 
-        if($PSBoundParameters.ContainsKey("HostFilter")) {
-            if($HostFilter.Contains("*")) {
+        if ($PSBoundParameters.ContainsKey("HostFilter")) {
+            if ($HostFilter.Contains("*")) {
                 $Filter["host_filter__iregex"] = $HostFilter.Replace("*", ".*")
-            } else {
+            }
+            else {
                 $Filter["host_filter"] = $HostFilter
             }
         }
 
-        if($PSBoundParameters.ContainsKey("InsightsCredential")) {
-            switch($InsightsCredential.GetType().Fullname) {
+        if ($PSBoundParameters.ContainsKey("InsightsCredential")) {
+            switch ($InsightsCredential.GetType().Fullname) {
                 "AnsibleTower.InsightsCredential" {
                     $Filter["insights_credential"] = $InsightsCredential.Id
                 }
@@ -126,24 +128,26 @@ function Get-AnsibleInventory {
             }
         }
 
-        if($PSBoundParameters.ContainsKey("Kind")) {
-            if($Kind.Contains("*")) {
+        if ($PSBoundParameters.ContainsKey("Kind")) {
+            if ($Kind.Contains("*")) {
                 $Filter["kind__iregex"] = $Kind.Replace("*", ".*")
-            } else {
+            }
+            else {
                 $Filter["kind"] = $Kind
             }
         }
 
-        if($PSBoundParameters.ContainsKey("Name")) {
-            if($Name.Contains("*")) {
+        if ($PSBoundParameters.ContainsKey("Name")) {
+            if ($Name.Contains("*")) {
                 $Filter["name__iregex"] = $Name.Replace("*", ".*")
-            } else {
+            }
+            else {
                 $Filter["name"] = $Name
             }
         }
 
-        if($PSBoundParameters.ContainsKey("Organization")) {
-            switch($Organization.GetType().Fullname) {
+        if ($PSBoundParameters.ContainsKey("Organization")) {
+            switch ($Organization.GetType().Fullname) {
                 "AnsibleTower.Organization" {
                     $Filter["organization"] = $Organization.Id
                 }
@@ -160,28 +164,31 @@ function Get-AnsibleInventory {
             }
         }
 
-        if($PSBoundParameters.ContainsKey("PendingDeletion")) {
+        if ($PSBoundParameters.ContainsKey("PendingDeletion")) {
             $Filter["pending_deletion"] = $PendingDeletion
         }
 
-        if($PSBoundParameters.ContainsKey("Variables")) {
-            if($Variables.Contains("*")) {
+        if ($PSBoundParameters.ContainsKey("Variables")) {
+            if ($Variables.Contains("*")) {
                 $Filter["variables__iregex"] = $Variables.Replace("*", ".*")
-            } else {
+            }
+            else {
                 $Filter["variables"] = $Variables
             }
         }
 
-        if($id) {
+        if ($id) {
             $CacheKey = "inventory/$Id"
             $AnsibleObject = $AnsibleTower.Cache.Get($CacheKey)
-            if($UseCache -and $AnsibleObject) {
+            if ($UseCache -and $AnsibleObject) {
                 Write-Debug "[Get-AnsibleInventory] Returning $($AnsibleObject.Url) from cache"
                 $AnsibleObject
-            } else {
+            }
+            else {
                 Invoke-GetAnsibleInternalJsonResult -ItemType "inventory" -Id $Id -AnsibleTower $AnsibleTower | ConvertToInventory -AnsibleTower $AnsibleTower
             }
-        } else {
+        }
+        else {
             Invoke-GetAnsibleInternalJsonResult -ItemType "inventory" -Filter $Filter -AnsibleTower $AnsibleTower | ConvertToInventory -AnsibleTower $AnsibleTower
         }
     }
@@ -192,25 +199,28 @@ function AddInventoryGroups {
         $Inventory
     )
     $Groups = Invoke-GetAnsibleInternalJsonResult -ItemType "inventory" -Id $Inventory.Id -ItemSubItem "groups" -AnsibleTower $Inventory.AnsibleTower
-    $Inventory.Groups = New-Object "System.Collections.Generic.List[AnsibleTower.Group]"
-    foreach($Group in $Groups) {
+    #$Inventory.Groups = New-Object "System.Collections.Generic.List[Group]"
+    $Inventory.Groups = @{}
+    foreach ($Group in $Groups) {
         $GroupObj = Get-AnsibleGroup -Id $Group.Id -AnsibleTower $Inventory.AnsibleTower -UseCache
-        $Inventory.Groups.Add($GroupObj)
+        $Inventory.Groups.Add($GroupObj.id, $GroupObj)
     }
     $Inventory
 }
 
 function ConvertToInventory {
     param(
-        [Parameter(ValueFromPipeline=$true,Mandatory=$true)]
+        [Parameter(ValueFromPipeline = $true, Mandatory = $true)]
         $InputObject,
 
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         $AnsibleTower
     )
     process {
-        $JsonString = ConvertTo-Json $InputObject
-        $AnsibleObject = [AnsibleTower.JsonFunctions]::ParseToinventory($JsonString)
+        #$JsonString = ConvertTo-Json $InputObject
+        #$AnsibleObject = [AnsibleTower.JsonFunctions]::ParseToinventory($JsonString)
+        $serializer = [System.Web.Script.Serialization.JavaScriptSerializer]::new()
+        $AnsibleObject = $serializer.Deserialize((ConvertTo-Json ($InputObject)), [Inventory])
         $AnsibleObject.AnsibleTower = $AnsibleTower
         $CacheKey = "inventory/$($AnsibleObject.Id)"
         Write-Debug "[Get-AnsibleInventory] Caching $($AnsibleObject.Url) as $CacheKey"

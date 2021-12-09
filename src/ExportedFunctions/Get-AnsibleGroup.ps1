@@ -1,4 +1,5 @@
-<#
+function Get-AnsibleGroup {
+    <#
 .DESCRIPTION
 Gets groups defined in Ansible Tower.
 
@@ -23,57 +24,56 @@ The ID of a specific AnsibleGroup to get
 .PARAMETER AnsibleTower
 The Ansible Tower instance to run against.  If no value is passed the command will run against $Global:DefaultAnsibleTower.
 #>
-function Get-AnsibleGroup
-{
-    [CmdletBinding(DefaultParameterSetname='PropertyFilter')]
-    [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSAvoidGlobalVars", "Global:DefaultAnsibleTower")]
+    [CmdletBinding(DefaultParameterSetname = 'PropertyFilter')]
+    #[Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSAvoidGlobalVars", "Global:DefaultAnsibleTower")]
     Param (
-        [Parameter(ParameterSetName='PropertyFilter')]
+        [Parameter(ParameterSetName = 'PropertyFilter')]
         [String]$Description,
 
-        [Parameter(ParameterSetName='PropertyFilter')]
+        [Parameter(ParameterSetName = 'PropertyFilter')]
         [switch]$HasActiveFailures,
 
-        [Parameter(ParameterSetName='PropertyFilter')]
+        [Parameter(ParameterSetName = 'PropertyFilter')]
         [switch]$HasInventorySources,
 
-        [Parameter(Position=2,ParameterSetName='PropertyFilter')]
+        [Parameter(Position = 2, ParameterSetName = 'PropertyFilter')]
         [Object]$Inventory,
 
-        [Parameter(Position=1,ParameterSetName='PropertyFilter')]
+        [Parameter(Position = 1, ParameterSetName = 'PropertyFilter')]
         [String]$Name,
 
-        [Parameter(ParameterSetName='PropertyFilter')]
+        [Parameter(ParameterSetName = 'PropertyFilter')]
         [String]$Variables,
 
-        [Parameter(ValueFromPipelineByPropertyName=$true,ParameterSetName='ById')]
+        [Parameter(ValueFromPipelineByPropertyName = $true, ParameterSetName = 'ById')]
         [Int32]$Id,
 
-        [Parameter(ParameterSetName='ById')]
+        [Parameter(ParameterSetName = 'ById')]
         [Switch]$UseCache,
 
         $AnsibleTower = $Global:DefaultAnsibleTower
     )
     process {
         $Filter = @{}
-        if($PSBoundParameters.ContainsKey("Description")) {
-            if($Description.Contains("*")) {
+        if ($PSBoundParameters.ContainsKey("Description")) {
+            if ($Description.Contains("*")) {
                 $Filter["description__iregex"] = $Description.Replace("*", ".*")
-            } else {
+            }
+            else {
                 $Filter["description"] = $Description
             }
         }
 
-        if($PSBoundParameters.ContainsKey("HasActiveFailures")) {
+        if ($PSBoundParameters.ContainsKey("HasActiveFailures")) {
             $Filter["has_active_failures"] = $HasActiveFailures
         }
 
-        if($PSBoundParameters.ContainsKey("HasInventorySources")) {
+        if ($PSBoundParameters.ContainsKey("HasInventorySources")) {
             $Filter["has_inventory_sources"] = $HasInventorySources
         }
 
-        if($PSBoundParameters.ContainsKey("Inventory")) {
-            switch($Inventory.GetType().Fullname) {
+        if ($PSBoundParameters.ContainsKey("Inventory")) {
+            switch ($Inventory.GetType().Fullname) {
                 "AnsibleTower.Inventory" {
                     $Filter["inventory"] = $Inventory.Id
                 }
@@ -90,18 +90,20 @@ function Get-AnsibleGroup
             }
         }
 
-        if($PSBoundParameters.ContainsKey("Name")) {
-            if($Name.Contains("*")) {
+        if ($PSBoundParameters.ContainsKey("Name")) {
+            if ($Name.Contains("*")) {
                 $Filter["name__iregex"] = $Name.Replace("*", ".*")
-            } else {
+            }
+            else {
                 $Filter["name"] = $Name
             }
         }
 
-        if($PSBoundParameters.ContainsKey("Variables")) {
-            if($Variables.Contains("*")) {
+        if ($PSBoundParameters.ContainsKey("Variables")) {
+            if ($Variables.Contains("*")) {
                 $Filter["variables__iregex"] = $Variables.Replace("*", ".*")
-            } else {
+            }
+            else {
                 $Filter["variables"] = $Variables
             }
         }
@@ -109,13 +111,15 @@ function Get-AnsibleGroup
         if ($id) {
             $CacheKey = "groups/$id"
             $AnsibleObject = $AnsibleTower.Cache.Get($CacheKey)
-            if($UseCache -and $AnsibleObject) {
+            if ($UseCache -and $AnsibleObject) {
                 Write-Debug "[Get-AnsibleGroup] Returning $($AnsibleObject.Url) from cache"
                 $AnsibleObject
-            } else {
+            }
+            else {
                 Invoke-GetAnsibleInternalJsonResult -ItemType "groups" -Id $id -AnsibleTower $AnsibleTower | ConvertToGroup -AnsibleTower $AnsibleTower
             }
-        } else {
+        }
+        else {
             Invoke-GetAnsibleInternalJsonResult -ItemType "groups" -AnsibleTower $AnsibleTower -Filter $Filter | ConvertToGroup -AnsibleTower $AnsibleTower
         }
     }
@@ -123,24 +127,27 @@ function Get-AnsibleGroup
 
 function ConvertToGroup {
     param(
-        [Parameter(ValueFromPipeline=$true,Mandatory=$true)]
+        [Parameter(ValueFromPipeline = $true, Mandatory = $true)]
         $InputObject,
 
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         $AnsibleTower
     )
     process {
-        $JsonString = ConvertTo-Json $InputObject
-        $AnsibleObject = [AnsibleTower.JsonFunctions]::ParseTogroup($JsonString)
+        #$JsonString = ConvertTo-Json $InputObject
+        #$AnsibleObject = [AnsibleTower.JsonFunctions]::ParseTogroup($JsonString)
+        $InputObject.variables = $InputObject.variables | ConvertFrom-Json
+        $serializer = [System.Web.Script.Serialization.JavaScriptSerializer]::new()
+        $AnsibleObject = $serializer.Deserialize((ConvertTo-Json ($InputObject)), [Group])
         $AnsibleObject.AnsibleTower = $AnsibleTower
         $CacheKey = "groups/$($AnsibleObject.Id)"
         Write-Debug "[Get-AnsibleGroup] Caching $($AnsibleObject.Url) as $CacheKey"
         $AnsibleTower.Cache.Add($CacheKey, $AnsibleObject, $Script:CachePolicy) > $null
         #Add to cache before filling in child objects to prevent recursive loop
-        if($AnsibleObject.Variables) {
+        if ($AnsibleObject.Variables.Count -gt 0) {
             $AnsibleObject.Variables = Get-ObjectVariableData $AnsibleObject
         }
-        if($AnsibleObject.Inventory) {
+        if ($AnsibleObject.Inventory) {
             $AnsibleObject.Inventory = Get-AnsibleInventory -Id $AnsibleObject.Inventory -AnsibleTower $AnsibleTower -UseCache
         }
         Write-Debug "[Get-AnsibleGroup] Returning $($AnsibleObject.Url)"

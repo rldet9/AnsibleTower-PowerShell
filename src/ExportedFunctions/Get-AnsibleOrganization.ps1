@@ -1,41 +1,41 @@
 function Get-AnsibleOrganization {
-    [CmdletBinding(DefaultParameterSetname='PropertyFilter')]
+    [CmdletBinding(DefaultParameterSetname = 'PropertyFilter')]
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSAvoidGlobalVars", "Global:DefaultAnsibleTower")]
     Param (
-        [Parameter(ParameterSetName='PropertyFilter')]
+        [Parameter(ParameterSetName = 'PropertyFilter')]
         [String]$Name,
 
-        [Parameter(ValueFromPipelineByPropertyName=$true,ParameterSetName='ById')]
+        [Parameter(ValueFromPipelineByPropertyName = $true, ParameterSetName = 'ById')]
         [int]$id,
 
-        [Parameter(ParameterSetName='ById')]
+        [Parameter(ParameterSetName = 'ById')]
         [Switch]$UseCache,
 
         $AnsibleTower = $Global:DefaultAnsibleTower
     )
     process {
         $Filter = @{}
-        if($PSBoundParameters.ContainsKey("Name")) {
-            if($Name.Contains("*")) {
+        if ($PSBoundParameters.ContainsKey("Name")) {
+            if ($Name.Contains("*")) {
                 $Filter["name__iregex"] = $Name.Replace("*", ".*")
-            } else {
+            }
+            else {
                 $Filter["name"] = $Name
             }
         }
 
-        if ($id)
-        {
+        if ($id) {
             $CacheKey = "organization/$id"
             $AnsibleObject = $AnsibleTower.Cache.Get($CacheKey)
-            if($UseCache -and $AnsibleObject) {
+            if ($UseCache -and $AnsibleObject) {
                 Write-Debug "[Get-AnsibleOrganization] Returning $($AnsibleObject.Url) from cache"
                 $AnsibleObject
-            } else {
+            }
+            else {
                 Invoke-GetAnsibleInternalJsonResult -ItemType "organizations" -Id $id -AnsibleTower $AnsibleTower | ConvertToOrganization -AnsibleTower $AnsibleTower
             }
         }
-        Else
-        {
+        Else {
             Invoke-GetAnsibleInternalJsonResult -ItemType "organizations" -AnsibleTower $AnsibleTower -Filter $Filter | ConvertToOrganization -AnsibleTower $AnsibleTower
         }
     }
@@ -43,15 +43,18 @@ function Get-AnsibleOrganization {
 
 function ConvertToOrganization {
     param(
-        [Parameter(ValueFromPipeline=$true,Mandatory=$true)]
+        [Parameter(ValueFromPipeline = $true, Mandatory = $true)]
         $InputObject,
 
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         $AnsibleTower
     )
     process {
-        $JsonString = ConvertTo-Json $InputObject
-        $AnsibleObject = [AnsibleTower.JsonFunctions]::ParseToOrganization($JsonString)
+        #$JsonString = ConvertTo-Json $InputObject
+        #$AnsibleObject = [AnsibleTower.JsonFunctions]::ParseToOrganization($JsonString)
+        $serializer = [System.Web.Script.Serialization.JavaScriptSerializer]::new()
+        $AnsibleObject = $serializer.Deserialize((ConvertTo-Json ($InputObject)), [Organization])
+
         $AnsibleObject.AnsibleTower = $AnsibleTower
         $CacheKey = "organization/$($AnsibleObject.Id)"
         Write-Debug "[Get-AnsibleOrganization] Caching $($AnsibleObject.Url) as $CacheKey"

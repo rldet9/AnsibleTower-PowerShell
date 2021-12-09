@@ -48,7 +48,7 @@ function Wait-AnsibleJob
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSAvoidGlobalVars", "Global:DefaultAnsibleTower")]
     param(
         [Parameter(ValueFromPipelineByPropertyName=$true,ValueFromPipeline=$true,Mandatory=$true,Position=0,ParameterSetName='Job')]
-        [AnsibleTower.Job]$Job,
+        [Job]$Job,
 
         [Parameter(ValueFromPipelineByPropertyName=$true,Mandatory=$true,Position=0,ParameterSetName='ID')]
         [int]$ID,

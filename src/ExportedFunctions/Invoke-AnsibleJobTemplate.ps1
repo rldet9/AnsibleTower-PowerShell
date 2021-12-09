@@ -1,5 +1,4 @@
-function Invoke-AnsibleJobTemplate
-{
+function Invoke-AnsibleJobTemplate {
     <#
     .SYNOPSIS
     Runs an Ansible job template.
@@ -39,16 +38,16 @@ function Invoke-AnsibleJobTemplate
     Strongly typed job object.
     #>
 
-    [CmdletBinding(DefaultParameterSetName='Filter')]
-    [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSAvoidGlobalVars", "Global:DefaultAnsibleTower")]
+    [CmdletBinding(DefaultParameterSetName = 'Filter')]
+    #[Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSAvoidGlobalVars", "Global:DefaultAnsibleTower")]
     Param (
-        [Parameter(Mandatory=$true,ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true,Position=0,ParameterSetName='Filter')]
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true, ValueFromPipelineByPropertyName = $true, Position = 0, ParameterSetName = 'Filter')]
         [string]$Name,
 
-        [Parameter(Mandatory=$true,ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true,Position=0,ParameterSetName='ID')]
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true, ValueFromPipelineByPropertyName = $true, Position = 0, ParameterSetName = 'ID')]
         [int]$ID,
 
-		[Object]$Data,
+        [Object]$Data,
 
         $AnsibleTower = $Global:DefaultAnsibleTower
     )
@@ -62,18 +61,20 @@ function Invoke-AnsibleJobTemplate
         }
 
         $params = @{
-            ItemType = 'job_templates'
-            itemId = $ID
+            ItemType    = 'job_templates'
+            itemId      = $ID
             ItemSubItem = 'launch'
         }
         if ($Data) {
-            $params.Add('InputObject', $Data)
+            #$params.Add('InputObject', $Data)
+            $params.Add('InputObject',@{extra_vars = $Data })
         }
         $result = Invoke-PostAnsibleInternalJsonResult @params -AnsibleTower $AnsibleTower
         if (!$result -and !$result.id) {
             Write-Error "Failed to start job for job template ID [$ID]" -ErrorAction Stop
             return
-        } else {
+        }
+        else {
             Get-AnsibleJob -id $result.id -AnsibleTower $AnsibleTower
         }
     }
