@@ -5,11 +5,16 @@ Powershell cmdlets for interacting with Ansible Tower.
 
 Example:
 ```
-Connect-AnsibleTower -Credential (Get-Credential) -TowerUrl 'https://ansible.domain.local' -DisableCertificateVerification;
-$JobTemplateName = 'Demo Job Template';
-$job = Invoke-AnsibleJobTemplate $JobTemplateName | Wait-AnsibleJob -Interval 5 -Timeout 60
-if ($job.failed -eq $true) {
-    throw ("Ansible job template [{0}] failed." -f $JobTemplateName);
-}
-```
+$userName = 'admin'
+$password = ConvertTo-SecureString 'password' -AsPlainText -Force
+$credential = new-object -typename System.Management.Automation.PSCredential -argumentlist $userName, $password
 
+Connect-AnsibleTower -Credential $credential -TowerUrl 'http://awx.araf.local.com' -Authorization 'xxxxxxxxxxxxxx' -DisableCertificateVerification -Verbose
+
+$extraVars = @{
+    title    = "Mr"
+    firtname = "John"
+    lastname = "DOE"
+}
+
+$job = Invoke-AnsibleJobTemplate -Name 'test_api' -Data $extraVars -Verbose | Wait-AnsibleJob -Interval 5 -Timeout 60 -Verbose
